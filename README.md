@@ -9,19 +9,14 @@ A visual simulation of wealth distribution mechanics demonstrating how random ex
     npm install
     ```
 
-2.  **Update index.html**
-    The default `index.html` uses a CDN for quick previewing. For local development and building, modify `index.html`:
-    
-    *Remove the `<script type="importmap">` block and the Tailwind CDN script.*
-    *Add the following line inside the `<body>` tag:*
-    ```html
-    <script type="module" src="/index.tsx"></script>
-    ```
-    *(Note: You may need to set up Tailwind CSS locally via PostCSS if you remove the CDN script, or keep the CDN script for simplicity).*
-
-3.  **Start Dev Server**
+2.  **Start Dev Server**
     ```bash
     npm run dev
+    ```
+
+3.  **Build for Production**
+    ```bash
+    npm run build
     ```
 
 ## 🌐 GitHub Pages Deployment
