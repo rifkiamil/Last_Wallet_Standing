@@ -1,20 +1,44 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Last Wallet Standing
 
-# Run and deploy your AI Studio app
+A visual simulation of wealth distribution mechanics demonstrating how random exchanges lead to inequality (based on statistical mechanics of money).
 
-This contains everything you need to run your app locally.
+## 🚀 How to Run Locally
 
-View your app in AI Studio: https://ai.studio/apps/drive/1tuUmuFWI2ODZ7atVCWT26UVXl9rv6Jfr
+1.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-## Run Locally
+2.  **Update index.html**
+    The default `index.html` uses a CDN for quick previewing. For local development and building, modify `index.html`:
+    
+    *Remove the `<script type="importmap">` block and the Tailwind CDN script.*
+    *Add the following line inside the `<body>` tag:*
+    ```html
+    <script type="module" src="/index.tsx"></script>
+    ```
+    *(Note: You may need to set up Tailwind CSS locally via PostCSS if you remove the CDN script, or keep the CDN script for simplicity).*
 
-**Prerequisites:**  Node.js
+3.  **Start Dev Server**
+    ```bash
+    npm run dev
+    ```
 
+## 🌐 How to Deploy to GitHub Pages
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1.  **Build the Project**
+    ```bash
+    npm run build
+    ```
+    This will create a `dist` folder with static files.
+
+2.  **Deploy**
+    - Push the contents of the `dist` folder to a `gh-pages` branch on your GitHub repository.
+    - Or, configure your repository Settings > Pages to serve from the `root` of the `gh-pages` branch.
+
+## 🎮 Game Rules
+
+- **Default**: 100 Agents, $50 start.
+- **Bankrupt**: If balance hits 0, agent is eliminated.
+- **Debt Mode**: Agents can go into negative balance.
+- **Goal**: Observe how wealth concentrates in fewer hands over time (Gini coefficient increases).

@@ -43,20 +43,33 @@ const App: React.FC = () => {
     initGame();
   }, [initGame]);
 
+  // Handle side effects when settings change (specifically debt toggle)
+  useEffect(() => {
+    setAgents(currentAgents => currentAgents.map(agent => {
+        // If debt is allowed, everyone is active (even if negative)
+        if (settings.allowDebt) return { ...agent, active: true };
+        
+        // If debt is NOT allowed, anyone with <= 0 is immediately inactive
+        if (agent.balance <= 0) return { ...agent, active: false };
+        
+        return agent;
+    }));
+  }, [settings.allowDebt]);
+
   // Simulation Step Logic
   const runRound = useCallback(() => {
     setAgents(currentAgents => {
       // Create a copy to mutate
       const nextAgents = [...currentAgents];
       
-      // If debt is not allowed, we only care about active agents for the source of funds
-      // If debt IS allowed, everyone stays active essentially, but we track negative values.
-      
+      // Determine who can participate
       let availableIndices: number[] = [];
       
       if (settings.allowDebt) {
         availableIndices = nextAgents.map((_, i) => i);
       } else {
+        // Only active agents with positive balance can initiate or receive in a way that keeps them alive
+        // Actually, anyone active can receive, but to keep it simple, we pick from active pool
         availableIndices = nextAgents
           .map((a, i) => (a.active && a.balance > 0) ? i : -1)
           .filter(i => i !== -1);
@@ -70,11 +83,6 @@ const App: React.FC = () => {
 
       for (let t = 0; t < settings.transactionsPerRound; t++) {
         // Pick two distinct random agents from the available pool
-        // We re-check availability inside the loop for "No Debt" mode to avoid immediate bankruptcy conflicts in same batch
-        
-        // Optimization: For high performance with static arrays, we just pick random indices 0..N-1
-        // and check validity.
-        
         const idx1 = Math.floor(Math.random() * nextAgents.length);
         const idx2 = Math.floor(Math.random() * nextAgents.length);
 
@@ -83,17 +91,17 @@ const App: React.FC = () => {
         const agentA = nextAgents[idx1];
         const agentB = nextAgents[idx2];
 
+        // Skip if agents are already out (double check for safety)
+        if (!settings.allowDebt && (!agentA.active || !agentB.active)) continue;
+
         // Check viability based on rules
-        const agentACanPay = settings.allowDebt || (agentA.active && agentA.balance >= settings.transactionAmount);
-        const agentBCanPay = settings.allowDebt || (agentB.active && agentB.balance >= settings.transactionAmount);
+        const agentACanPay = settings.allowDebt || (agentA.balance >= settings.transactionAmount);
+        const agentBCanPay = settings.allowDebt || (agentB.balance >= settings.transactionAmount);
         
         // If neither can pay, skip
         if (!agentACanPay && !agentBCanPay) continue;
 
         // Determine direction: 50/50 chance
-        // If only one can pay, the one who can pay MUST pay? 
-        // Standard model: Random pair met. Coin toss decides who pays. If payer is broke (and no debt), transaction fails.
-        
         const direction = Math.random() > 0.5 ? 'AtoB' : 'BtoA';
         const amount = settings.transactionAmount;
 
@@ -113,15 +121,11 @@ const App: React.FC = () => {
             }
         }
 
-        // Update Peak and Activity status
+        // Update Active status immediately
         if (!settings.allowDebt) {
             if (agentA.balance <= 0) agentA.active = false;
             if (agentB.balance <= 0) agentB.active = false;
-        } else {
-            // In debt mode, everyone is active, but let's mark them active for visual consistency
-            agentA.active = true;
-            agentB.active = true;
-        }
+        } 
         
         agentA.peakBalance = Math.max(agentA.peakBalance, agentA.balance);
         agentB.peakBalance = Math.max(agentB.peakBalance, agentB.balance);
@@ -145,13 +149,19 @@ const App: React.FC = () => {
 
 
   // Derived Stats
-  const activeCount = agents.filter(a => a.active && a.balance > 0).length;
-  const bankruptCount = settings.agentCount - activeCount; // Approximate for Debt mode
+  const activeCount = agents.filter(a => a.active).length;
+  // If debt is allowed, count negatives. If not, count inactives.
+  const bankruptOrDebtCount = settings.allowDebt 
+    ? agents.filter(a => a.balance < 0).length 
+    : agents.filter(a => !a.active).length;
+
   const maxBalance = Math.max(...agents.map(a => a.balance), 0);
   
   // Calculate Gini Coefficient (approximate)
   const calculateGini = () => {
     if (agents.length === 0) return 0;
+    // Filter to only include active agents (or all if debt allowed) for Gini calc?
+    // Usually Gini is for the whole population. If they are bankrupt (0), they contribute to inequality.
     const balances = agents.map(a => Math.max(0, a.balance)).sort((a, b) => a - b);
     const n = balances.length;
     const sum = balances.reduce((acc, val) => acc + val, 0);
@@ -209,12 +219,6 @@ const App: React.FC = () => {
                 onReset={initGame}
                 onSettingsChange={(s) => {
                     setSettings(prev => ({ ...prev, ...s }));
-                    // If critical settings change, we might want to reset or just apply live. 
-                    // Changing agentCount usually requires reset.
-                    if (s.agentCount && s.agentCount !== settings.agentCount) {
-                        // Handled by effect dependency in InitGame? No, need explicit trigger if we add a slider for count later.
-                        // For now, controls don't change count live.
-                    }
                 }}
                 onSpeedChange={setSimulationSpeed}
             />
@@ -224,9 +228,9 @@ const App: React.FC = () => {
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between h-24">
                      <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase">
                         <TrendingDown className="w-4 h-4" />
-                        <span>Bankrupt</span>
+                        <span>{settings.allowDebt ? 'In Debt' : 'Bankrupt'}</span>
                      </div>
-                     <div className="text-3xl font-bold text-red-400">{agents.filter(a => a.balance <= 0).length}</div>
+                     <div className="text-3xl font-bold text-red-400">{bankruptOrDebtCount}</div>
                 </div>
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between h-24">
                      <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase">
@@ -265,17 +269,19 @@ const App: React.FC = () => {
                     <h3 className="text-slate-400 text-xs uppercase tracking-wider font-semibold flex items-center gap-2">
                         <Users className="w-4 h-4" /> Agent Status
                     </h3>
-                    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider text-slate-500">
-                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-slate-700 rounded-sm"></div> $0</span>
-                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-900 rounded-sm"></div> Poor</span>
-                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-500 rounded-sm"></div> Avg</span>
-                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-amber-400 rounded-sm shadow-[0_0_5px_rgba(251,191,36,0.5)]"></div> Rich</span>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div> Active
+                        <div className="w-2 h-2 bg-amber-400 rounded-full"></div> Rich
+                        {settings.allowDebt ? (
+                             <><div className="w-2 h-2 bg-red-900 rounded-full"></div> Debt</>
+                        ) : (
+                             <><div className="w-2 h-2 bg-slate-800 rounded-full"></div> Out</>
+                        )}
                     </div>
                 </div>
                 <AgentGrid agents={agents} maxBalance={maxBalance} />
              </div>
           </div>
-
         </main>
       </div>
     </div>
