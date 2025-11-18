@@ -42,9 +42,11 @@ Your site will be available at: `https://<username>.github.io/<repository-name>/
 
 The deployment is handled by `.github/workflows/deploy.yml`, which:
 1. **Triggers** on every push to `main` (or manually via workflow_dispatch)
-2. **Builds** the Vite project using `npm run build` (creates static files in `dist/`)
-3. **Uploads** the `dist` folder as a Pages artifact
-4. **Deploys** using GitHub's official `actions/deploy-pages@v4` action
+2. **Sets up** Node.js 20 with npm caching for faster builds
+3. **Installs** dependencies using `npm ci` (requires `package-lock.json`)
+4. **Builds** the Vite project using `npm run build` (creates static files in `dist/`)
+5. **Uploads** the `dist` folder as a Pages artifact
+6. **Deploys** using GitHub's official `actions/deploy-pages@v4` action
 
 ### Design Choices
 
@@ -62,6 +64,12 @@ The deployment is handled by `.github/workflows/deploy.yml`, which:
 - **Clarity**: Separates concerns (building vs deploying)
 - **Reusability**: Build artifacts can be inspected or used elsewhere
 - **Best Practice**: Follows GitHub's recommended Pages deployment pattern
+
+**Why use `npm ci` instead of `npm install`?**
+- **Reproducibility**: `npm ci` uses the exact versions from `package-lock.json`
+- **Speed**: Faster in CI environments (deletes `node_modules` first, then installs)
+- **Reliability**: Fails if `package-lock.json` is out of sync with `package.json`
+- **Note**: Requires `package-lock.json` to be committed to the repository
 
 ### Manual Deployment (Alternative)
 
