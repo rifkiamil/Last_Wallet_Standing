@@ -2,6 +2,10 @@
 
 A visual simulation of wealth distribution mechanics demonstrating how random exchanges lead to inequality (based on statistical mechanics of money).
 
+## 🌐 Live Demo
+
+**👉 [View the live application here](https://xn--2o8haa.ws/Last_Wallet_Standing/)** 👈
+
 ## 🚀 How to Run Locally
 
 1.  **Install Dependencies**
