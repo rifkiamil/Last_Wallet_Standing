@@ -6,6 +6,9 @@ A visual simulation of wealth distribution mechanics demonstrating how random ex
 
 **👉 [View the live application here](https://xn--2o8haa.ws/Last_Wallet_Standing/)** 👈
 
+<img width="1355" height="973" alt="Screenshot live application here https://xn--2o8haa.ws/Last_Wallet_Standing/" src="https://github.com/user-attachments/assets/ae60113b-2548-43e9-9b04-ddaf87a269ec" />
+
+
 ## 🚀 How to Run Locally
 
 1.  **Install Dependencies**
